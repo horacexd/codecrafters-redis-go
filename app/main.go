@@ -47,6 +47,12 @@ func handleConnection(l net.Listener) {
 				fmt.Println("Error reading: ", err.Error())
 			}
 		}
-		conn.Write([]byte("+PONG\r\n"))
+		// parse command 
+		parseAndexecuteCommand(conn, buf)
+		// conn.Write([]byte("+PONG\r\n"))
 	}
+}
+
+func parseAndexecuteCommand(conn net.Conn, buf []byte) {
+	
 }
