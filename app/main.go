@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -22,23 +23,30 @@ func main() {
 		os.Exit(1)
 	}
 	defer l.Close()
-	
+	// we may have multiple connections
+	for {
+		go handleConnection(l)
+	}
+}
+
+func handleConnection(l net.Listener) {
 	conn, err := l.Accept()
 	defer conn.Close()
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	for {
-		go handleConnection(conn)
-	}
-}
-
-func handleConnection(conn net.Conn) {
 	buf := make([]byte, 1024)
-	_, err := conn.Read(buf)
-	if err!= nil {
-		fmt.Println("Error reading: ", err.Error())
+	// each connection may have multiple requests
+	for {
+		_, err = conn.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				continue
+			} else {
+				fmt.Println("Error reading: ", err.Error())
+			}
+		}
+		conn.Write([]byte("+PONG\r\n"))
 	}
-	conn.Write([]byte("+PONG\r\n"))
 }
