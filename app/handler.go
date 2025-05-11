@@ -40,11 +40,11 @@ func parseBulkString(buf []byte, pos *int) []string {
 	tokens := []string{}
 	l := getLength(buf, pos)
 	s := *pos
-	fmt.Println("[DEBUG] parseBulkString start=%d", *pos)
+	// fmt.Println("[DEBUG] parseBulkString start=%d", *pos)
 	// fmt.Println("[DEBUG] slice=[%x]", buf[s:s + l])
 	tokens = append(tokens, string(buf[s:s + l]))
 	*pos += (l + 2)
-	fmt.Println("[DEBUG] parseBulkString end=%d", *pos)
+	// fmt.Println("[DEBUG] parseBulkString end=%d", *pos)
 	// fmt.Println("[DEBUG] bulk string len=[%d] val=[%s]", l, tokens)
 	return tokens
 }
@@ -67,7 +67,7 @@ func parseArray(buf []byte, pos *int) []string {
 		case '$':
 			*pos++
 			tmp := parseBulkString(buf, pos)
-			fmt.Println("[DEBUG] get bulkstring=%s", tmp)
+			// fmt.Println("[DEBUG] get bulkstring=%s", tmp)
 			tokens = append(tokens, tmp...)
 		}
 	}
@@ -138,7 +138,7 @@ func parseAndExecutePushes(conn net.Conn, buf []byte, pos int) error {
 // HELPER FUNCTION
 func getLength(buf []byte, pos *int) int {
 	s := *pos
-	fmt.Println("[DEBUG] getLength start=%d", *pos)
+	// fmt.Println("[DEBUG] getLength start=%d", *pos)
 	for *pos < len(buf) - 1 {
 		if buf[*pos] == '\r' && buf[*pos + 1] == '\n' {
 			break
@@ -147,12 +147,15 @@ func getLength(buf []byte, pos *int) int {
 	}
 	l, _ := strconv.Atoi(string(buf[s:*pos]))
 	*pos += 2
-	fmt.Println("[DEBUG] getLength end=%d", *pos)
+	// fmt.Println("[DEBUG] getLength end=%d", *pos)
 
 	return l
-} 
+}
 
+func buildBulkString(s string) string {
+	return fmt.Sprintf("$%d\r\n%s\r\n", len(s), s)
+}
 
-// * 2 \r \n $ 4 \r \n ECHO\r\n$4\r\npear\r\n
-//                     8            14
-// * 2 \r \n $ 4 \r \n E C H O \r \n $ 5\r\napple\r\n"
+func buildSimpleString(s string) string {
+	return fmt.Sprintf("+%s\r\n", s)
+}

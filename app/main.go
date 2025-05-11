@@ -58,6 +58,8 @@ func handleConnection(l net.Listener) {
 			fmt.Println("Error parsing command: ", err.Error())
 			continue
 		}
+		// clean up buf each time 
+		clear(buf)
 	}
 }
 
@@ -98,7 +100,7 @@ func parseAndExecuteCommand(conn net.Conn, buf []byte) error {
 		case '*':
 			// array
 			pos++
-			fmt.Println("[DEBUG] receive array. buf=%s pos=%d", buf, pos)
+			// fmt.Println("[DEBUG] receive array. buf=%s pos=%d", buf, pos)
 			token :=  parseArray(buf, &pos)
 			tokens = append(tokens, token...)
 			fmt.Println("[DEBUG] array=[%s]", tokens)
@@ -177,12 +179,35 @@ func execute(conn net.Conn, args []string) error {
 		if len(args) < 2 {
 			return nil
 		}
-		conn.Write([]byte(fmt.Sprintf("$%d\r\n%s\r\n", len(args[1]), args[1])))
+		conn.Write([]byte(buildBulkString(args[1])))
+	case "set":
+		if len(args) < 3 {
+			return nil
+		}
+		k, v := args[1], args[2]
+		err := executeCommandSet(k, v); 
+		if err != nil {
+			return fmt.Errorf("fail to set value. err=%v", err)
+		}
+		conn.Write([]byte(buildSimpleString("OK")))
+	case "get":
+		if len(args) < 2 {
+			return nil
+		}
+		k := args[1]
+		v, err := executeCommandGet(k)
+		if err != nil {
+			return fmt.Errorf("fail to get value. err=%v", err)
+		}
+		fmt.Println("[DEBUG] get value=%s", v)
+		conn.Write([]byte(buildBulkString(v)))
 	default:
 		return fmt.Errorf("unknown command")
 	}
 	return nil
 }
+
+
 
 
 
