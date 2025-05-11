@@ -38,15 +38,19 @@ func parseBulkString(buf []byte, pos *int) []string {
 	// Parse the bulk string from the buffer and send it to the connection
 	// Implementation goes here
 	tokens := []string{}
-	s := *pos
 	l := getLength(buf, pos)
+	s := *pos
+	fmt.Println("[DEBUG] parseBulkString start=%d", *pos)
 	// fmt.Println("[DEBUG] slice=[%x]", buf[s:s + l])
 	tokens = append(tokens, string(buf[s:s + l]))
 	*pos += (l + 2)
+	fmt.Println("[DEBUG] parseBulkString end=%d", *pos)
 	// fmt.Println("[DEBUG] bulk string len=[%d] val=[%s]", l, tokens)
 	return tokens
 }
 
+// *2\r\n$4\r\nECHO\r\n$4\r\npear\r\n
+        
 func parseArray(buf []byte, pos *int) []string {
 	// Parse the array from the buffer and send it to the connection
 	// Implementation goes here
@@ -147,3 +151,8 @@ func getLength(buf []byte, pos *int) int {
 
 	return l
 } 
+
+
+// * 2 \r \n $ 4 \r \n ECHO\r\n$4\r\npear\r\n
+//                     8            14
+// * 2 \r \n $ 4 \r \n E C H O \r \n $ 5\r\napple\r\n"

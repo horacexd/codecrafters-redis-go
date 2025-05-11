@@ -77,7 +77,8 @@ func parseAndExecuteCommand(conn net.Conn, buf []byte) error {
 		case '+':
 			// simple string
 			pos++
-			tokens = parseSimpleString(buf, &pos)
+			token := parseSimpleString(buf, &pos)
+			tokens = append(tokens, token...)
 			fmt.Println("[DEBUG] simplestring=[%s]", tokens)
 		// case '-':
 		// 	// simple error
@@ -98,7 +99,8 @@ func parseAndExecuteCommand(conn net.Conn, buf []byte) error {
 			// array
 			pos++
 			fmt.Println("[DEBUG] receive array. buf=%s pos=%d", buf, pos)
-			tokens = parseArray(buf, &pos)
+			token :=  parseArray(buf, &pos)
+			tokens = append(tokens, token...)
 			fmt.Println("[DEBUG] array=[%s]", tokens)
 		// case '_':
 		// 	// null
@@ -175,7 +177,7 @@ func execute(conn net.Conn, args []string) error {
 		if len(args) < 2 {
 			return nil
 		}
-		conn.Write([]byte(fmt.Sprintf("+%s\r\n", args[1])))
+		conn.Write([]byte(fmt.Sprintf("$%d\r\n%s\r\n", len(args[1]), args[1])))
 	default:
 		return fmt.Errorf("unknown command")
 	}
