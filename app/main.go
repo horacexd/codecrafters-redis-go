@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -181,11 +182,20 @@ func execute(conn net.Conn, args []string) error {
 		}
 		conn.Write([]byte(buildBulkString(args[1])))
 	case "set":
+	    var err error
 		if len(args) < 3 {
 			return nil
 		}
 		k, v := args[1], args[2]
-		err := executeCommandSet(k, v); 
+		ttl := int64(-1)
+		if len(args) > 3 {
+			opt_k, opt_v := args[3], args[4]
+			if strings.ToLower(opt_k) == "px" {
+				t, _ := strconv.Atoi(opt_v)
+				ttl = int64(t)
+			}
+		}
+		err = executeCommandSetWithExpiry(k, v, int64(ttl)); 
 		if err != nil {
 			return fmt.Errorf("fail to set value. err=%v", err)
 		}

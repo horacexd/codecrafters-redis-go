@@ -153,6 +153,9 @@ func getLength(buf []byte, pos *int) int {
 }
 
 func buildBulkString(s string) string {
+	if (s == "-1") {
+		return "$-1\r\n"
+	}
 	return fmt.Sprintf("$%d\r\n%s\r\n", len(s), s)
 }
 
