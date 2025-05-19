@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -30,10 +31,23 @@ func executeCommandGet(k string) (string, error) {
 	if !ok {
 		return "-1", nil
 	}
+
+	// TODO: add periodically key clean up for dict with ttl
 	if v.ttl != -1 && v.createMilliTimestamp + v.ttl < time.Now().UnixMilli() {
 		delete(dict, k)
 		return "-1", nil
 	}
 
 	return v.val, nil
+}
+
+func executeCommandConfigGet(k string) ([]string, error) {
+	switch k {
+	case "dir":
+		return []string{k, DIR}, nil
+	case "dirfilename":
+		return []string{k, DB_FILE_NAME}, nil
+	default:
+		return nil, fmt.Errorf("unknown config name. %s", k)
+	}
 }

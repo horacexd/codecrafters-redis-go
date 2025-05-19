@@ -7,11 +7,18 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"flag"
 )
 
 const (
 	MAX_CONNECTIONS = 1000
 	MAX_CONNECTION_TIMEOUT = 10 // seconds
+)
+
+var (
+	DIR string
+	DB_FILE_NAME string
 )
 
 func main() {
@@ -20,6 +27,13 @@ func main() {
 
 	// Uncomment this block to pass the first stage
 	//
+	dirPtr := flag.String("dir", "", "redis rdb files location")
+	dbfilenamePtr := flag.String("dbfilename", "", "redis rdb files name")
+
+	flag.Parse()
+	DIR = *dirPtr
+	DB_FILE_NAME = *dbfilenamePtr
+
 	l, err := net.Listen("tcp", "0.0.0.0:6379")
 	if err != nil {
 		fmt.Println("Failed to bind to port 6379")
@@ -159,7 +173,7 @@ func parseAndExecuteCommand(conn net.Conn, buf []byte) error {
 		default:
 			// unknown command
 			fmt.Println("[DEBUG] current pos=%d", pos)
-			return fmt.Errorf("unknown command: %v", buf[pos])
+			return fmt.Errorf("unknown command: %s", buf[pos])
 		}
 	}
 
@@ -180,7 +194,7 @@ func execute(conn net.Conn, args []string) error {
 		if len(args) < 2 {
 			return nil
 		}
-		conn.Write([]byte(buildBulkString(args[1])))
+		conn.Write([]byte(buildStringWithBulk(1, args[1])))
 	case "set":
 	    var err error
 		if len(args) < 3 {
@@ -197,7 +211,7 @@ func execute(conn net.Conn, args []string) error {
 		}
 		err = executeCommandSetWithExpiry(k, v, int64(ttl)); 
 		if err != nil {
-			return fmt.Errorf("fail to set value. err=%v", err)
+			return fmt.Errorf("fail to set value. err=%w", err)
 		}
 		conn.Write([]byte(buildSimpleString("OK")))
 	case "get":
@@ -207,10 +221,28 @@ func execute(conn net.Conn, args []string) error {
 		k := args[1]
 		v, err := executeCommandGet(k)
 		if err != nil {
-			return fmt.Errorf("fail to get value. err=%v", err)
+			return fmt.Errorf("fail to get value. err=%w", err)
 		}
 		fmt.Println("[DEBUG] get value=%s", v)
-		conn.Write([]byte(buildBulkString(v)))
+		conn.Write([]byte(buildStringWithBulk(1, v)))
+	case "config":
+		if len(args) < 3 {
+			return nil
+		}
+		opt, k := args[1], args[2]
+		var err error
+		var vals []string
+		if strings.ToLower(opt) == "get" {
+			vals, err = executeCommandConfigGet(strings.ToLower(k))
+		} else if strings.ToLower(opt) == "set" {
+
+		}
+
+		if err != nil {
+			return fmt.Errorf("fail to config %s value. err=%w", opt, err)
+		}
+
+		conn.Write([]byte(buildStringWithBulk(len(vals), vals...)))
 	default:
 		return fmt.Errorf("unknown command")
 	}

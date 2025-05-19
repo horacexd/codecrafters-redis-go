@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 	"fmt"
+	"strings"
 )
 
 // assume receive byte string e.g.: +PING\r\n
@@ -147,15 +148,34 @@ func getLength(buf []byte, pos *int) int {
 	}
 	l, _ := strconv.Atoi(string(buf[s:*pos]))
 	*pos += 2
-	// fmt.Println("[DEBUG] getLength end=%d", *pos)
-
 	return l
 }
 
-func buildBulkString(s string) string {
-	if (s == "-1") {
+// TODO: need to distinguish null return and value "-1" return
+func buildStringWithBulk(l int, ss... string) string {
+	if l == 1 && len(ss) == 1 && ss[0] == "-1" {
 		return "$-1\r\n"
 	}
+
+	if l == 1 {
+		return buildBulkString(ss[0])
+	}
+	builder := strings.Builder{}
+	builder.WriteRune('*')
+	builder.WriteString(strconv.Itoa(l))
+	builder.WriteRune('\r')
+	builder.WriteRune('\n')
+
+	for i := 0; i < l; i++ {
+		s := ss[i]
+		builder.WriteString(buildBulkString(s))
+	} 
+
+	return builder.String()
+}
+
+
+func buildBulkString(s string) string {
 	return fmt.Sprintf("$%d\r\n%s\r\n", len(s), s)
 }
 
